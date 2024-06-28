@@ -13,6 +13,12 @@
         android:theme="@style/Theme.PracticaMomentosOpenCV"
         tools:targetApi="31">
         <activity
+            android:name=".Camara_Android_Activity"
+            android:exported="false" />
+        <activity
+            android:name=".Activity_Main_Part_2"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
@@ -22,5 +28,8 @@
             </intent-filter>
         </activity>
     </application>
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
 </manifest>

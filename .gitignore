@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+openCV/**
+OpenCV/**
+OpenCV/
+/OpenCV
+/openCV

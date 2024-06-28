@@ -15,3 +15,8 @@
 local.properties
 # OpenCV
 /OpenCVLibrary*
+/OpenCV
+OpenCV/
+openCV/**
+OpenCV/**
+/openCV
