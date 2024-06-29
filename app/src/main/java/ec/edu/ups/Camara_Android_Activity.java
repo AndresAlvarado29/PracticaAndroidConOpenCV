@@ -41,7 +41,7 @@ public class Camara_Android_Activity extends CameraActivity implements CameraBri
     private CameraBridgeViewBase camaraActivity;
     private String nombre="Foto_";
     private Mat frame;
-    private android.widget.Button btnTomar;
+    private android.widget.Button btnTomar,btnTomar2;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "called onCreate");
@@ -75,8 +75,25 @@ public class Camara_Android_Activity extends CameraActivity implements CameraBri
                     Intent intent = new Intent(Camara_Android_Activity.this, MainActivity.class);
                     intent.putExtra("imagenUri", imagenUri.toString());
                     startActivity(intent);
-
-
+                }
+            }
+        });
+        btnTomar2=findViewById(R.id.btnTomarFotoPart2);
+        btnTomar2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED || checkSelfPermission(android.Manifest.permission.CAMERA)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    String[] permissions = {android.Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
+                    requestPermissions(permissions, 1);
+                }else{
+                    Log.d(TAG, "Permisos ya concedidos. Capturando imagen.");
+                    capturarImagen(frame);
+                    Uri imagenUri = almacenar(frame);
+                    Intent intent = new Intent(Camara_Android_Activity.this, Activity_Main_Part_2.class);
+                    intent.putExtra("imagenUri", imagenUri.toString());
+                    startActivity(intent);
                 }
             }
         });

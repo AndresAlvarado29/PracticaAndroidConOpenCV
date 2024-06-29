@@ -15,7 +15,7 @@ import ec.edu.ups.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
     private android.widget.Button btnCamara, btnHu,btnPart2,btnZernike,btnProcesar;
-    private android.widget.TextView txtMomentos,txtFiguraDetectada;
+    private android.widget.TextView txtFiguraDetectada;
     private android.widget.ImageView imgOriginal,imgModificado;
     private Intent intent;
     private ActivityMainBinding binding;
@@ -41,16 +41,10 @@ public class MainActivity extends AppCompatActivity {
             try {
                 bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
                 imgOriginal.setImageBitmap(bitmap);
-
-
-
             } catch (Exception e) {
                 //Log.e(TAG, "Error al cargar la imagen desde el URI: " + e.getMessage());
                 Toast.makeText(this, "Error al cargar la imagen", Toast.LENGTH_SHORT).show();
             }
-        } else {
-            //Log.e(TAG, "URI de imagen es null.");
-            Toast.makeText(this, "No se recibió ninguna imagen", Toast.LENGTH_SHORT).show();
         }
     btnCamara.setOnClickListener(new View.OnClickListener() {
         @Override
@@ -107,4 +101,5 @@ public class MainActivity extends AppCompatActivity {
     public native void procesarImagen(android.graphics.Bitmap in, android.graphics.Bitmap out);
     public native String momentosHu(android.graphics.Bitmap in);
     public native String momentosZernike(android.graphics.Bitmap in);
+    public native String predecirImagen(android.graphics.Bitmap bitmap);
 }

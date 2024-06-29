@@ -13,20 +13,23 @@
 #include <fstream>
 #include <sstream>
 #include <cstring>
+#include <opencv2/opencv.hpp>
+#include <vector>
+#include <map>
+#include <limits>
+#include <opencv2/ml.hpp>
+#include <android/asset_manager_jni.h>
+#include <android/bitmap.h>
 
-// Librerías de OpenCV
-//#include <opencv2/opencv.hpp>
-
-#include <opencv2/imgproc.hpp> // Librería que contiene operaciones para realizar procesamiento de imágenes
-#include <opencv2/imgcodecs.hpp> // Librería contiene los métodos para cargar imágenes de acuerdo a un códec
-#include <opencv2/core.hpp> // Librería que contiene las estructuras y funciones base para representar las imágenes como matrices
-#include <opencv2/video.hpp> // Librería para realizar lectura de vídeos
-#include <opencv2/videoio.hpp> // Librería para escritura de vídoeos y streaming
-#include <opencv2/highgui.hpp> // Librería para crear interfaces básicas de usuario
 
 using namespace std;
+using namespace cv::ml;
+using namespace cv;
 const int MAX_L = 15;
 const double PI = 3.14159265358979323846;
+Ptr<SVM> svmModel;
+Mat scalerMean, scalerScale;
+
 //momentos zernike
 void mb_zernike2D(const cv::Mat &Im, double order, double rad, double *zvalues, long *output_size) {
     int L, N, D;
@@ -402,4 +405,113 @@ Java_ec_edu_ups_MainActivity_momentosZernike(
 
     // Devolver la cadena como jstring
     return env->NewStringUTF(ss.str().c_str());
+}
+
+//parte 2
+void loadScaler(const string& filepath, Mat& mean, Mat& scale) {
+    FileStorage fs(filepath, FileStorage::READ);
+    if (!fs.isOpened()) {
+        cerr << "Error: could not open the scaler file!" << endl;
+        return;
+    }
+    fs["mean"] >> mean;
+    fs["scale"] >> scale;
+    fs.release();
+
+    // Convertir mean y scale a una fila
+    mean = mean.reshape(1, 1);
+    scale = scale.reshape(1, 1);
+
+    // Convertir mean y scale a float
+    mean.convertTo(mean, CV_32F);
+    scale.convertTo(scale, CV_32F);
+}
+
+// Función para escalar características utilizando el escalador cargado
+Mat scaleFeatures(const Mat& features, const Mat& mean, const Mat& scale) {
+    Mat scaledFeatures;
+    subtract(features, mean, scaledFeatures);
+    divide(scaledFeatures, scale, scaledFeatures);
+    return scaledFeatures;
+}
+
+// Función para extraer características LBP de una imagen Mat
+Mat extractLBPFeatures(const Mat& src) {
+    Mat lbpImage = Mat::zeros(src.size(), CV_8UC1);
+    for (int i = 1; i < src.rows - 1; i++) {
+        for (int j = 1; j < src.cols - 1; j++) {
+            uchar center = src.at<uchar>(i, j);
+            unsigned char code = 0;
+            code |= (src.at<uchar>(i - 1, j - 1) > center) << 7;
+            code |= (src.at<uchar>(i - 1, j) > center) << 6;
+            code |= (src.at<uchar>(i - 1, j + 1) > center) << 5;
+            code |= (src.at<uchar>(i, j + 1) > center) << 4;
+            code |= (src.at<uchar>(i + 1, j + 1) > center) << 3;
+            code |= (src.at<uchar>(i + 1, j) > center) << 2;
+            code |= (src.at<uchar>(i + 1, j - 1) > center) << 1;
+            code |= (src.at<uchar>(i, j - 1) > center) << 0;
+            lbpImage.at<uchar>(i - 1, j - 1) = code;
+        }
+    }
+
+    Mat hist = Mat::zeros(1, 10, CV_32SC1); // Ajuste el histograma a 10 características
+    for (int i = 0; i < lbpImage.rows; i++) {
+        for (int j = 0; j < lbpImage.cols; j++) {
+            hist.at<int>(0, lbpImage.at<uchar>(i, j))++;
+        }
+    }
+
+    hist.convertTo(hist, CV_32F);
+    hist = hist / sum(hist)[0];
+    return hist;
+}
+
+// Función para predecir la clase de una imagen utilizando el modelo SVM
+string predictImage(const Mat& image, const Mat& mean, const Mat& scale) {
+    Mat gray;
+    cvtColor(image, gray, COLOR_RGBA2GRAY);  // Convertir a escala de grises si es necesario
+
+    Mat features = extractLBPFeatures(gray);
+    features = features.reshape(1, 1); // Asegúrate de que las características sean una fila
+    features = scaleFeatures(features, mean, scale);
+
+    float response = svmModel->predict(features);
+
+    return response == 1.0 ? "Metal" : "Madera";
+}
+
+// Función para cargar el modelo SVM desde un archivo XML
+bool loadSVMModel(const string& modelPath) {
+    svmModel = SVM::load(modelPath);
+    if (svmModel.empty()) {
+        cerr << "Error: could not load the SVM model from " << modelPath << endl;
+        return false;
+    }
+    return true;
+}
+
+// Función para cargar el escalador y el modelo SVM
+extern "C" JNIEXPORT void JNICALL
+Java_ec_edu_ups_MainActivity_loadModel(JNIEnv* env, jobject /*this*/, jstring modelPath, jstring scalerPath) {
+    const char *model_path = env->GetStringUTFChars(modelPath, nullptr);
+    const char *scaler_path = env->GetStringUTFChars(scalerPath, nullptr);
+
+    bool modelLoaded = loadSVMModel(model_path);
+    if (modelLoaded) {
+        loadScaler(scaler_path, scalerMean, scalerScale);
+    }
+
+    env->ReleaseStringUTFChars(modelPath, model_path);
+    env->ReleaseStringUTFChars(scalerPath, scaler_path);
+}
+
+// Función para clasificar una imagen Mat utilizando SVM y LBP
+extern "C" JNIEXPORT jstring JNICALL
+Java_ec_edu_ups_MainActivity_classifyImage(JNIEnv* env, jobject /*this*/, jobject bitmap) {
+    cv::Mat img;
+    bitmapToMat(env, bitmap, img, false);  // Convertir el bitmap a Mat
+
+    string result = predictImage(img, scalerMean, scalerScale);
+
+    return env->NewStringUTF(result.c_str());
 }

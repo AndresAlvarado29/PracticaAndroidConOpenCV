@@ -24,9 +24,23 @@
         android:text="Tomar"
         app:layout_constraintBottom_toTopOf="@+id/camaraVista"
         app:layout_constraintEnd_toStartOf="@+id/camaraVista"
-        app:layout_constraintHorizontal_bias="0.521"
+        app:layout_constraintHorizontal_bias="0.697"
         app:layout_constraintStart_toEndOf="@+id/camaraVista"
         app:layout_constraintTop_toBottomOf="@+id/camaraVista"
-        app:layout_constraintVertical_bias="0.075" />
+        app:layout_constraintVertical_bias="0.082" />
+
+    <Button
+        android:id="@+id/btnTomarFotoPart2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:elevation="10dp"
+        android:text="Tomar Part2"
+        app:layout_constraintBottom_toTopOf="@+id/camaraVista"
+        app:layout_constraintEnd_toStartOf="@+id/camaraVista"
+        app:layout_constraintHorizontal_bias="0.34"
+        app:layout_constraintStart_toEndOf="@+id/camaraVista"
+        app:layout_constraintTop_toBottomOf="@+id/camaraVista"
+        app:layout_constraintVertical_bias="0.082" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
